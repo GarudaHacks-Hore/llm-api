@@ -32,6 +32,6 @@ def create_embedding_tensor(vault_content):
     return vault_embeddings_tensor
 
 client = OpenAI(
-    base_url=env["MODEL_CLIENT_URL"],
+    base_url=f"{env['MODEL_CLIENT_URL']}/v1",
     api_key='dolphin-llama3'
 )
