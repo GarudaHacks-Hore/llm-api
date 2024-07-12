@@ -1,5 +1,6 @@
 from app.libs.supabase import supabase
 from app.utils.chunk_result import chunk_result
+from app.configs.env import env
 from openai import OpenAI
 import ollama
 import torch
@@ -31,6 +32,6 @@ def create_embedding_tensor(vault_content):
     return vault_embeddings_tensor
 
 client = OpenAI(
-    base_url='http://localhost:11434/v1',
+    base_url=env["MODEL_CLIENT_URL"],
     api_key='dolphin-llama3'
 )
