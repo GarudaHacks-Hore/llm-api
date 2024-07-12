@@ -3,10 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.models.dolphin_llama3 import client, generate_embedding
 from app.services.user_chatbot import find_user_chatbot
+from app.services.registration_chatbot import registration_chatbot
 from app.api.prompts import get_prompts_from_room, create_prompts
 class UserPrompt(BaseModel):
     prompt: str
     identifier: str | None = None
+
+class RegistrationPrompt(BaseModel):
+    prompt: str
+    phase: int
+    conversation_history: list | None = None
 
 app = FastAPI()
 
@@ -52,6 +58,39 @@ def find_users(prompt: UserPrompt):
 
     response, new_conversation = find_user_chatbot(client, prompt.prompt, initial_system_prompt, vault_embeddings, vault_content, past_histories)
 
-    create_prompts(prompt.identifier, new_conversation)
+    r=create_prompts(prompt.identifier, new_conversation)
 
-    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content}
+    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content, "response": r}
+
+@app.post("/registration")
+def register(prompt: RegistrationPrompt):
+
+    conversation_history = prompt.conversation_history or []
+
+    if (prompt.phase == 1):
+        system_message = """
+            Greet the new user and show some interest in their city and/or country.
+            - Avoid introducing new topics or queries that deviate from the original query.
+            - You must ask about what the user has been doing lately, what their current project is, or what their current most interesting thing is.
+            Original query: [{prompt.prompt}]
+            Answer query: 
+        """
+    elif (prompt.phase == 2):
+        system_message = """
+            Be excited and say that their project is interesting. Ask the user what are the milestone's they have reached so far.
+            It can be number of users or the development phase they are in.
+            - Avoid introducing new topics or queries that deviate from the original query.
+            - Ask for more details about their project. A sentence or two is sufficient, as long as the user's excitement is conveyed.
+            Original query: [{prompt.prompt}]
+            Answer query: 
+        """
+    elif (prompt.phase == 3):
+        system_message = """
+            Be excited and say that their profile is all set up.
+            - Avoid introducing new topics or queries that deviate from the original query.
+            Original query: [{prompt.prompt}]
+            Answer query:  
+        """
+
+    response = registration_chatbot(client, conversation_history, system_message, prompt.prompt)
+    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content, "history": conversation_history}

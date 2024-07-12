@@ -5,9 +5,13 @@ def get_prompts_from_room(room_id: str):
     return response.data
 
 def create_prompts(room_id: str, prompts: list):
-    values = [{"roomId": room_id, "chat": p["content"], "role": p["role"]} for p in prompts]
+    values = []
+    for p in prompts:
+        if (p["role"] != 'user'):
+            values.append({"roomId": room_id, "chat": p["content"], "role": p["role"]})
 
     # values = [{"roomId": room_id, "chat": p.content, "role": p.role} for p in prompts]
     print(values)
     response = supabase.table("prompts").insert(values).execute()
+    print(response)
     return response.data
