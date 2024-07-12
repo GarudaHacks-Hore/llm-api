@@ -1,2 +1,6 @@
 fastapi
 openai
+python-dotenv
+supabase
+ollama
+torch
