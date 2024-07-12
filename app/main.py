@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from app.models.dolphin_llama3 import client, generate_embedding
 from app.services.user_chatbot import find_user_chatbot
 from app.services.registration_chatbot import registration_chatbot
+from app.services.summarize import summarize_text
 from app.api.prompts import get_prompts_from_room, create_prompts
 class UserPrompt(BaseModel):
     prompt: str
@@ -62,6 +63,11 @@ def find_users(prompt: UserPrompt):
 
     return {"prompt": prompt.prompt, "answer": response.choices[0].message.content, "response": r}
 
+@app.post("/summarize")
+def create_summary(prompt: UserPrompt):
+    response = summarize_text(client, prompt.prompt)
+    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content}
+
 @app.post("/registration")
 def register(prompt: RegistrationPrompt):
 
@@ -75,6 +81,14 @@ def register(prompt: RegistrationPrompt):
             Original query: [{prompt.prompt}]
             Answer query: 
         """
+
+        response = client.chat.completions.create(
+        model="dolphin-llama3",
+        messages=[
+            {"role": "system", "content": "You should only answer the question as stated. Do not add more text than necessary. Just output the name. You should also do the same for every language."},
+            {"role": "user", "content": f"Get the user's name from the following text\n\nUSER TEXT:{prompt.prompt}\n\n"}
+        ])
+        summary = response.choices[0].message.content
     elif (prompt.phase == 2):
         system_message = """
             Be excited and say that their project is interesting. Ask the user what are the milestone's they have reached so far.
@@ -84,6 +98,7 @@ def register(prompt: RegistrationPrompt):
             Original query: [{prompt.prompt}]
             Answer query: 
         """
+        summary = ""
     elif (prompt.phase == 3):
         system_message = """
             Be excited and say that their profile is all set up.
@@ -91,6 +106,9 @@ def register(prompt: RegistrationPrompt):
             Original query: [{prompt.prompt}]
             Answer query:  
         """
+        summary = ""
+
 
     response = registration_chatbot(client, conversation_history, system_message, prompt.prompt)
-    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content, "history": conversation_history}
+
+    return {"prompt": prompt.prompt, "answer": response.choices[0].message.content, "history": conversation_history, "summary": summary}
