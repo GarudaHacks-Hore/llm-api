@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from app.models.dolphin_llama3 import client, generate_embedding
 from app.services.user_chatbot import find_user_chatbot
@@ -8,6 +9,15 @@ class UserPrompt(BaseModel):
     identifier: str | None = None
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 vault_embeddings, vault_content = generate_embedding()
 
 @app.get("/")
